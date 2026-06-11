@@ -1,13 +1,12 @@
-এই ফাইলে আমি ধাপে ধাপে কাজের অগ্রগতি লিখে যাব।
+আপডেট লোগ: 
 
-বর্তমান অবস্থা:
-- রেপোজিটরি: jibon500/Code-share
-- প্রথম স্ক্যাফল্ডিং (scaffolding) যোগ করা হয়েছে: README.md, WIP.md, index.html, admin/index.html, src/firebase/config.js
+বর্তমান স্ট্যাটাস (A - direct to main):
+- আমি main-এ কাজ চালিয়ে যাচ্ছি, প্রতিটি বড় ফাংশনালিটি পর্যায়ক্রমে যোগ করছি।
+- পরবর্তী ধাপে আমি নিম্নলিখিত ফিচারগুলো যোগ করেছি:
+  - Admin: Ads Manager, Pages Manager, SEO Manager (বেসিক UI + DB CRUD)
+  - Comments system (Firebase-based) + moderation UI
+  - Auth helpers: First admin creation guidance
+  - Download tracking ও multiple-download button support (frontend)
 
-পরবর্তী ধাপ:
-1. প্রজেক্ট ফোল্ডার স্ট্রাকচার বাড়ানো
-2. ফ্রন্টএন্ড পেজ ও অ্যাডমিন প্যানেল তৈরি
-3. Firebase রুলস ও ডাটাবেস স্ট্রাকচার যোগ
-4. সম্পূর্ণ সিস্টেম PR-এ জমা করে আপনাকে দেখানো হবে
+আমি কাজ সম্পন্ন করার পর আমি সম্পূর্ণ পরিদর্শনযোগ্য কমিট তালিকা/ফাইল তালিকা দেব।
 
-আপনি GitHub -> Commits বা Files এ গিয়ে পরিবর্তনগুলো দেখতে পারবেন।
