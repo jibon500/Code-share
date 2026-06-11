@@ -1,36 +1,69 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel — Code Share</title>
   <link rel="stylesheet" href="/admin/css/admin.css">
 </head>
 <body>
   <div class="admin-container">
+    <!-- ADMIN HEADER -->
     <header class="admin-header">
-      <h1>Code Share — Admin</h1>
+      <div>
+        <h1>📄 Code Share Admin Panel</h1>
+      </div>
       <div id="auth-area"></div>
     </header>
 
+    <!-- ADMIN MAIN -->
     <main class="admin-main">
-      <section class="admin-section">
-        <h2>Website Settings</h2>
+      <!-- DASHBOARD -->
+      <div id="dashboard-section" class="admin-section">
+        <h2>🏢 Dashboard</h2>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+
+      <!-- PROJECTS MANAGER -->
+      <div id="projects-section" class="admin-section hidden">
+        <h2>📄 Projects Manager</h2>
+        <button class="btn btn-primary" onclick="adminApp.toggleProjectForm()">+ Create Project</button>
+        <div id="project-form" class="form-container hidden"></div>
+        <div id="projects-list" class="list-container"></div>
+      </div>
+
+      <!-- CATEGORIES MANAGER -->
+      <div id="categories-section" class="admin-section hidden">
+        <h2>📁 Categories Manager</h2>
+        <button class="btn btn-primary" onclick="adminApp.toggleCategoryForm()">+ Create Category</button>
+        <div id="category-form" class="form-container hidden"></div>
+        <div id="categories-list" class="list-container"></div>
+      </div>
+
+      <!-- COMMENTS MANAGER -->
+      <div id="comments-section" class="admin-section hidden">
+        <h2>💬 Comments Manager</h2>
+        <div id="comments-list" class="list-container"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="settings-section" class="admin-section hidden">
+        <h2>⚙️ Website Settings</h2>
         <div id="settings-form"></div>
-      </section>
-
-      <section class="admin-section">
-        <h2>Categories</h2>
-        <div id="category-form"></div>
-        <div id="categories-list"></div>
-      </section>
-
-      <section class="admin-section">
-        <h2>Projects</h2>
-        <div id="project-form"></div>
-        <div id="projects-list"></div>
-      </section>
+      </div>
     </main>
+  </div>
+
+  <!-- SIDEBAR MENU -->
+  <div id="admin-menu" class="admin-menu">
+    <nav class="menu-nav">
+      <a href="#" class="menu-link" onclick="adminApp.showSection('dashboard')">🏢 Dashboard</a>
+      <a href="#" class="menu-link" onclick="adminApp.showSection('projects')">📄 Projects</a>
+      <a href="#" class="menu-link" onclick="adminApp.showSection('categories')">📁 Categories</a>
+      <a href="#" class="menu-link" onclick="adminApp.showSection('comments')">💬 Comments</a>
+      <a href="#" class="menu-link" onclick="adminApp.showSection('settings')">⚙️ Settings</a>
+      <a href="#" class="menu-link logout" onclick="adminApp.logout()">🚪 Logout</a>
+    </nav>
   </div>
 
   <script type="module" src="/admin/js/admin.js"></script>
