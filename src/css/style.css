@@ -1,0 +1,37 @@
+/* Basic responsive styles for Code Share (mobile-first) */
+:root{
+  --primary:#2b6cff;--muted:#6b7280;--card:#ffffff;--bg:#f3f4f6
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;background:var(--bg);color:#111}
+.site-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid #e6e6e6}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{font-size:18px;margin:0}
+.logo{height:36px}
+.main-nav .btn{background:none;border:1px solid transparent;padding:8px 10px;border-radius:8px;cursor:pointer}
+.btn-admin{background:var(--primary);color:#fff}
+.container{padding:16px;max-width:1100px;margin:0 auto}
+.hero{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px}
+.hero h2{margin:0 0 8px}
+.hero-actions{display:flex;gap:8px;margin-top:12px}
+#search-input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+.btn{padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:#fff}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.categories h3,.projects h3{margin:8px 0}
+.categories-grid{display:flex;gap:8px;overflow:auto;padding-bottom:8px}
+.cat-card{min-width:120px;background:#fff;padding:12px;border-radius:10px;border:1px solid #e6e6e6;display:flex;flex-direction:column;align-items:center;gap:8px}
+.cat-card img{width:48px;height:48px;object-fit:contain}
+.projects-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.project-card{background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:10px}
+.project-thumb{width:100%;height:140px;object-fit:cover;border-radius:8px}
+.project-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.project-meta .actions{display:flex;gap:8px}
+.like-btn,.love-btn{background:none;border:1px solid #eee;padding:6px;border-radius:8px;cursor:pointer}
+.site-footer{padding:12px;text-align:center;color:var(--muted);font-size:14px}
+.modal{position:fixed;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999}
+.modal.hidden{display:none}
+.modal-inner{background:#fff;padding:16px;border-radius:10px;max-width:720px;width:94%}
+.modal-close{position:absolute;right:16px;top:16px;background:none;border:none;font-size:20px}
+.progress{height:8px;background:#eee;border-radius:8px;overflow:hidden}
+#progress-bar{height:100%;width:0;background:var(--primary);transition:width 0.3s}
+@media(min-width:900px){.projects-grid{grid-template-columns:repeat(3,1fr)}}

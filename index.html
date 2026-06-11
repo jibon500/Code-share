@@ -1,27 +1,70 @@
 <!doctype html>
 <html lang="bn">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Code Share — Professional Code Sharing Platform (WIP)</title>
-  <style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:20px;background:#f7f7f7;color:#222}a{color:#0066cc}</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Code Share — Professional Code Sharing Platform</title>
+  <meta name="description" content="Professional Code Sharing & Download Platform — share source code, templates, scripts, APIs and more. Manage everything from Admin Panel." />
+  <link rel="stylesheet" href="/src/css/style.css">
 </head>
 <body>
-  <h1>Code Share (WIP)</h1>
-  <p>এই রেপোজিটরিতে আমি ধাপে ধাপে "Professional Code Sharing & Download Platform" তৈরি করছি।</p>
-  <ul>
-    <li><a href="/" target="_blank">Site root</a></li>
-    <li><a href="/admin50" target="_blank">Admin Panel (placeholder)</a></li>
-  </ul>
-  <h2>Firebase</h2>
-  <p>Firebase configuration is stored in <code>src/firebase/config.js</code>.</p>
+  <header class="site-header">
+    <div class="brand">
+      <img src="/assets/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+      <h1>Code Share</h1>
+    </div>
+    <nav class="main-nav">
+      <button id="btn-search" class="btn">Search</button>
+      <button id="btn-categories" class="btn">Categories</button>
+      <a href="/admin50" class="btn btn-admin">Admin</a>
+    </nav>
+  </header>
 
-  <script type="module">
-    import firebaseConfig from './src/firebase/config.js';
-    // Lazy-load Firebase SDKs (modular) if needed later
-    // For now just expose config for debugging in development only
-    window._FIREBASE_CONFIG = firebaseConfig;
-    console.log('Firebase config loaded (not initialized):', firebaseConfig);
-  </script>
+  <main id="app" class="container">
+    <section class="hero">
+      <h2>Professional Code Sharing & Download Platform</h2>
+      <p>Share Source Code, Templates, Scripts, APIs, Tools and more. Manage everything from Admin Panel.</p>
+      <div class="hero-actions">
+        <input id="search-input" placeholder="Search by title, tags, category...">
+        <button id="search-btn" class="btn primary">Search</button>
+      </div>
+    </section>
+
+    <section class="categories" id="categories-list">
+      <h3>Categories</h3>
+      <div class="categories-grid" id="categories-grid">
+        <!-- categories loaded here -->
+      </div>
+    </section>
+
+    <section class="projects" id="projects-list">
+      <h3>Latest Projects</h3>
+      <div class="projects-grid" id="projects-grid">
+        <!-- project cards -->
+      </div>
+    </section>
+
+  </main>
+
+  <div id="project-modal" class="modal hidden">
+    <div class="modal-inner">
+      <button class="modal-close" id="modal-close">×</button>
+      <div id="project-content"></div>
+    </div>
+  </div>
+
+  <div id="processing-popup" class="modal hidden">
+    <div class="modal-inner">
+      <h3>Processing...</h3>
+      <div class="progress"><div id="progress-bar"></div></div>
+      <p id="processing-text">Please wait while we prepare your download.</p>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Code Share — All rights reserved.</p>
+  </footer>
+
+  <script type="module" src="/src/js/app.js"></script>
 </body>
 </html>

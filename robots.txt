@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://jibon500.github.io/Code-share/sitemap.xml

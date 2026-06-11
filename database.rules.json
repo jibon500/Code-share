@@ -1,0 +1,40 @@
+{
+  "rules": {
+    "settings": {
+      ".read": true,
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    },
+    "categories": {
+      ".read": true,
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    },
+    "projects": {
+      ".read": true,
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    },
+    "downloads": {
+      ".read": true,
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    },
+    "likes": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "loves": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "views": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "comments": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "admins": {
+      ".read": false,
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    }
+  }
+}
