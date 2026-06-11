@@ -1,68 +1,144 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Code Share — Professional Code Sharing Platform</title>
-  <meta name="description" content="Professional Code Sharing & Download Platform — share source code, templates, scripts, APIs and more. Manage everything from Admin Panel." />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Share — Professional Code Sharing & Download Platform</title>
+  <meta name="description" content="Share Source Code, Templates, Scripts, APIs, Tools and more. Manage everything from Admin Panel.">
+  <meta name="keywords" content="code sharing, download, source code, templates, scripts, apis">
   <link rel="stylesheet" href="/src/css/style.css">
+  <link rel="manifest" href="/manifest.json">
 </head>
 <body>
+  <!-- HEADER -->
   <header class="site-header">
     <div class="brand">
       <img src="/assets/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
       <h1>Code Share</h1>
     </div>
     <nav class="main-nav">
-      <button id="btn-search" class="btn">Search</button>
-      <button id="btn-categories" class="btn">Categories</button>
-      <a href="/admin50" class="btn btn-admin">Admin</a>
+      <button id="btn-search" class="btn">🔍 Search</button>
+      <button id="btn-categories" class="btn">📁 Categories</button>
+      <button id="btn-menu" class="btn" style="display:none">☰</button>
     </nav>
   </header>
 
+  <!-- MOBILE MENU -->
+  <div id="mobile-menu" class="mobile-menu hidden">
+    <div class="menu-overlay" id="menu-overlay"></div>
+    <div class="menu-content">
+      <button class="menu-close" id="menu-close">✕</button>
+      <div class="menu-items">
+        <a href="#" class="menu-item">🏠 Home</a>
+        <a href="#" class="menu-item">📁 Categories</a>
+        <a href="#" class="menu-item">⭐ Featured</a>
+        <a href="#" class="menu-item">🔥 Popular</a>
+        <a href="/admin50" class="menu-item">⚙️ Admin Panel</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
   <main id="app" class="container">
+    <!-- HERO SECTION -->
     <section class="hero">
       <h2>Professional Code Sharing & Download Platform</h2>
       <p>Share Source Code, Templates, Scripts, APIs, Tools and more. Manage everything from Admin Panel.</p>
       <div class="hero-actions">
-        <input id="search-input" placeholder="Search by title, tags, category...">
-        <button id="search-btn" class="btn primary">Search</button>
+        <input id="search-input" type="text" placeholder="Search by title, tags, category...">
+        <button id="search-btn" class="btn btn-primary">Search</button>
       </div>
     </section>
 
-    <section class="categories" id="categories-list">
-      <h3>Categories</h3>
+    <!-- CATEGORIES SECTION -->
+    <section class="categories" id="categories-section">
+      <h3>📁 Categories</h3>
       <div class="categories-grid" id="categories-grid">
-        <!-- categories loaded here -->
+        <!-- Loaded dynamically -->
       </div>
     </section>
 
-    <section class="projects" id="projects-list">
-      <h3>Latest Projects</h3>
-      <div class="projects-grid" id="projects-grid">
-        <!-- project cards -->
+    <!-- TECHNOLOGIES SECTION -->
+    <section class="tech-section">
+      <h3>🔧 Popular Technologies</h3>
+      <div class="tech-grid" id="tech-grid">
+        <!-- Loaded dynamically -->
       </div>
     </section>
 
+    <!-- FEATURED PROJECTS -->
+    <section class="projects-section">
+      <h3>⭐ Featured Projects</h3>
+      <div class="projects-grid" id="featured-grid">
+        <!-- Loaded dynamically -->
+      </div>
+    </section>
+
+    <!-- LATEST PROJECTS -->
+    <section class="projects-section">
+      <h3>🆕 Latest Projects</h3>
+      <div class="projects-grid" id="latest-grid">
+        <!-- Loaded dynamically -->
+      </div>
+    </section>
+
+    <!-- POPULAR PROJECTS -->
+    <section class="projects-section">
+      <h3>🔥 Popular Projects</h3>
+      <div class="projects-grid" id="popular-grid">
+        <!-- Loaded dynamically -->
+      </div>
+    </section>
+
+    <!-- BANNER ADS -->
+    <section class="ads-section" id="bottom-banner-ads">
+      <!-- Loaded from admin settings -->
+    </section>
   </main>
 
+  <!-- PROJECT DETAILS MODAL -->
   <div id="project-modal" class="modal hidden">
     <div class="modal-inner">
-      <button class="modal-close" id="modal-close">×</button>
-      <div id="project-content"></div>
+      <button class="modal-close" id="modal-close">✕</button>
+      <div id="project-content" class="project-detail"></div>
     </div>
   </div>
 
+  <!-- PROCESSING POPUP -->
   <div id="processing-popup" class="modal hidden">
     <div class="modal-inner">
-      <h3>Processing...</h3>
-      <div class="progress"><div id="progress-bar"></div></div>
-      <p id="processing-text">Please wait while we prepare your download.</p>
+      <div class="processing-content">
+        <div class="spinner"></div>
+        <h3>⏳ Processing...</h3>
+        <div class="progress"><div id="progress-bar"></div></div>
+        <p id="processing-text">Please wait while we prepare your download.</p>
+      </div>
     </div>
   </div>
 
+  <!-- FOOTER -->
   <footer class="site-footer">
-    <p>&copy; <span id="year"></span> Code Share — All rights reserved.</p>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>About Us</h4>
+        <p id="footer-description">Professional Code Sharing Platform</p>
+      </div>
+      <div class="footer-section">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms & Conditions</a></li>
+          <li><a href="#">Contact Us</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Follow Us</h4>
+        <div class="social-links" id="social-links"></div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; <span id="year"></span> Code Share — All rights reserved.</p>
+    </div>
   </footer>
 
   <script type="module" src="/src/js/app.js"></script>
