@@ -1,115 +1,54 @@
 import firebaseConfig from '../src/firebase/config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
-import { getDatabase, ref, push, set, onValue, remove, get, child, update } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
-import { getStorage, ref as sref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js';
+import { getDatabase, ref, onValue, push, set, update, get, remove } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+import { getStorage } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js';
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-const authArea = document.getElementById('auth-area');
-const settingsForm = document.getElementById('settings-form');
-const categoryForm = document.getElementById('category-form');
-const categoriesList = document.getElementById('categories-list');
-const projectForm = document.getElementById('project-form');
-const projectsList = document.getElementById('projects-list');
+const $ = id => document.getElementById(id);
+const el = (tag, cls) => Object.assign(document.createElement(tag), { className: cls || '' });
 
-// Simple auth UI
-function renderAuth(){
-  authArea.innerHTML = '';
-  const loginBtn = document.createElement('button'); loginBtn.className='btn'; loginBtn.textContent='Login';
-  const logoutBtn = document.createElement('button'); logoutBtn.className='btn'; logoutBtn.textContent='Logout';
-  loginBtn.onclick = ()=>showLogin(); logoutBtn.onclick = ()=>{ signOut(auth).then(()=>alert('Signed out')) };
-  authArea.appendChild(loginBtn); authArea.appendChild(logoutBtn);
-}
-
-function showLogin(){
-  const email = prompt('Admin email'); if(!email) return; const pass = prompt('Password'); if(!pass) return;
-  signInWithEmailAndPassword(auth,email,pass).then(()=>alert('Logged in')).catch(e=>alert('Login failed: '+e.message));
-}
-
-// Settings form (simple key-value JSON editor)
-function loadSettings(){
-  settingsForm.innerHTML = '';
-  const sRef = ref(db,'settings');
-  onValue(sRef,snap=>{
-    const data = snap.val() || {};
-    const ta = document.createElement('textarea'); ta.style.width='100%'; ta.style.height='160px'; ta.value = JSON.stringify(data,null,2);
-    const save = document.createElement('button'); save.className='btn primary'; save.textContent='Save Settings';
-    save.onclick = ()=>{
-      try{ const parsed = JSON.parse(ta.value); set(sRef, parsed).then(()=>alert('Settings saved')) }catch(e){ alert('Invalid JSON') }
-    }
-    settingsForm.appendChild(ta); settingsForm.appendChild(save);
-  });
-}
-
-// Categories CRUD
-function renderCategoryForm(){
-  categoryForm.innerHTML='';
-  const name = document.createElement('input'); name.placeholder='Category name';
-  const slug = document.createElement('input'); slug.placeholder='Slug';
-  const icon = document.createElement('input'); icon.placeholder='Icon URL';
-  const add = document.createElement('button'); add.className='btn primary'; add.textContent='Add Category';
-  add.onclick = ()=>{
-    if(!name.value) return alert('Name required');
-    push(ref(db,'categories'),{ name:name.value, slug:slug.value||name.value.toLowerCase().replace(/\s+/g,'-'), icon:icon.value||'' }).then(()=>{ name.value=''; slug.value=''; icon.value=''; });
-  }
-  categoryForm.appendChild(name); categoryForm.appendChild(slug); categoryForm.appendChild(icon); categoryForm.appendChild(add);
-}
-
-function loadCategoriesList(){
-  categoriesList.innerHTML='';
-  onValue(ref(db,'categories'),snap=>{
-    categoriesList.innerHTML=''; const data = snap.val()||{};
-    Object.keys(data).forEach(k=>{ const c=data[k]; const card=document.createElement('div'); card.className='card'; card.innerHTML=`<b>${c.name}</b> <small>${c.slug||''}</small>`;
-      const del=document.createElement('button'); del.className='btn'; del.textContent='Delete'; del.onclick=()=>remove(ref(db,`categories/${k}`));
-      card.appendChild(del); categoriesList.appendChild(card);
-    });
-  });
-}
-
-// Projects: simple create with downloads
-function renderProjectForm(){
-  projectForm.innerHTML='';
-  const title = document.createElement('input'); title.placeholder='Project title';
-  const category = document.createElement('input'); category.placeholder='Category ID (paste key)';
-  const short = document.createElement('input'); short.placeholder='Short description';
-  const full = document.createElement('textarea'); full.placeholder='Full description';
-  const thumbnail = document.createElement('input'); thumbnail.type='file';
-  const downloadsJson = document.createElement('textarea'); downloadsJson.placeholder='Downloads JSON (array) e.g.[{"name":"Source","finalLink":"https://..."}]'; downloadsJson.style.height='80px';
-  const add = document.createElement('button'); add.className='btn primary'; add.textContent='Create Project';
-
-  add.onclick = async ()=>{
-    if(!title.value) return alert('Title required');
-    const obj = { title: title.value, categoryId: category.value, shortDescription: short.value, fullDescription: full.value, createdAt: Date.now(), likes:0, loves:0, views:0 };
-    const newRef = push(ref(db,'projects'));
-    await set(newRef, obj);
-    // upload thumbnail if provided
-    if(thumbnail.files && thumbnail.files[0]){
-      const f = thumbnail.files[0];
-      const srefPath = sref(storage, `thumbnails/${newRef.key}/${f.name}`);
-      uploadBytes(srefPath,f).then(snap=> getDownloadURL(srefPath).then(url=> update(newRef,{ thumbnail: url })));    }
-    // downloads JSON
-    try{ const dl = JSON.parse(downloadsJson.value||'[]'); if(dl.length) set(ref(db,`projects/${newRef.key}/downloads`), dl.reduce((acc,d,i)=>{acc['d'+i]=d;return acc},{}) ); }catch(e){/* ignore */}
-    alert('Project created'); title.value='';category.value='';short.value='';full.value='';downloadsJson.value=''; thumbnail.value='';
+class AdminApp {
+  constructor() {
+    this.currentUser = null;
+    this.init();
   }
 
-  projectForm.appendChild(title); projectForm.appendChild(category); projectForm.appendChild(short); projectForm.appendChild(full); projectForm.appendChild(thumbnail); projectForm.appendChild(downloadsJson); projectForm.appendChild(add);
-}
+  init() {
+    this.setupAuth();
+  }
 
-function loadProjectsList(){
-  projectsList.innerHTML='';
-  onValue(ref(db,'projects'),snap=>{
-    projectsList.innerHTML=''; const data = snap.val()||{};
-    Object.keys(data).forEach(k=>{ const p=data[k]; const card=document.createElement('div'); card.className='card'; card.innerHTML=`<b>${p.title}</b><div><small>${p.shortDescription||''}</small></div>`;
-      const del=document.createElement('button'); del.className='btn'; del.textContent='Delete'; del.onclick=()=>remove(ref(db,`projects/${k}`));
-      card.appendChild(del); projectsList.appendChild(card);
+  setupAuth() {
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        this.currentUser = user;
+        this.checkAdminAccess();
+      } else {
+        this.showLoginScreen();
+      }
     });
-  });
-}
+  }
 
-// Init UI
-renderAuth(); loadSettings(); renderCategoryForm(); loadCategoriesList(); renderProjectForm(); loadProjectsList();
+  checkAdminAccess() {
+    const adminsRef = ref(db, 'admins');
+    get(adminsRef).then(snap => {
+      const admins = snap.val() || {};
+      const isAdmin = Object.values(admins).some(a => a.email === this.currentUser.email);
+      
+      if (!isAdmin) {
+        alert('❌ Access denied! You are not an admin.');
+        signOut(auth);
+      } else {
+        this.showDashboard();
+      }
+    });
+  }
 
+  showLoginScreen() {
+    const authArea = $('auth-area');
+    authArea.innerHTML = `
+      <div class="login-container\">\n        <div class=\"login-form\">\n          <h3>🔐 Admin Login</h3>\n          <input type=\"email\" id=\"login-email\" placeholder=\"Email\" maxlength=\"100\">\n          <input type=\"password\" id=\"login-password\" placeholder=\"Password\">\n          <button class=\"btn btn-primary\" onclick=\"adminApp.handleLogin()\">Login</button>\n          <hr>\n          <h4>First Time Setup?</h4>\n          <input type=\"email\" id=\"signup-email\" placeholder=\"Email\" maxlength=\"100\">\n          <input type=\"password\" id=\"signup-password\" placeholder=\"Password (min 6)\" minlength=\"6\">\n          <button class=\"btn btn-success\" onclick=\"adminApp.handleSignup()\">Create Admin Account</button>\n        </div>\n      </div>\n    `;\n  }\n\n  handleLogin() {\n    const email = document.getElementById('login-email').value.trim();\n    const password = document.getElementById('login-password').value;\n\n    if (!email || !password) {\n      alert('❌ Please enter email and password');\n      return;\n    }\n\n    signInWithEmailAndPassword(auth, email, password)\n      .then(() => {\n        alert('✅ Logged in successfully!');\n      })\n      .catch(err => {\n        alert('❌ Login failed: ' + err.message);\n      });\n  }\n\n  handleSignup() {\n    const email = document.getElementById('signup-email').value.trim();\n    const password = document.getElementById('signup-password').value;\n\n    if (!email || !password || password.length < 6) {\n      alert('❌ Invalid email or password (min 6 chars)');\n      return;\n    }\n\n    // Check if admins already exist\n    const adminsRef = ref(db, 'admins');\n    get(adminsRef).then(snap => {\n      const admins = snap.val() || {};\n      if (Object.keys(admins).length > 0) {\n        alert('❌ Admin account already exists! Only first admin signup is allowed.');\n        return;\n      }\n\n      createUserWithEmailAndPassword(auth, email, password)\n        .then(userCred => {\n          const adminRef = ref(db, 'admins/' + userCred.user.uid);\n          set(adminRef, {\n            email,\n            createdAt: Date.now(),\n            name: 'Admin'\n          }).then(() => {\n            alert('✅ Admin account created! Logging in...');\n          });\n        })\n        .catch(err => {\n          alert('❌ Signup failed: ' + err.message);\n        });\n    });\n  }\n\n  showDashboard() {\n    const authArea = $('auth-area');\n    authArea.innerHTML = `\n      <div class=\"user-info\">\n        <span>👤 ${this.currentUser.email}</span>\n        <button class=\"btn btn-danger btn-sm\" onclick=\"adminApp.logout()\">Logout</button>\n      </div>\n    `;\n    this.loadDashboard();\n  }\n\n  logout() {\n    if (confirm('Are you sure you want to logout?')) {\n      signOut(auth).then(() => {\n        alert('✅ Logged out!');\n      });\n    }\n  }\n\n  loadDashboard() {\n    this.showSection('dashboard');\n    this.updateStats();\n  }\n\n  updateStats() {\n    const statsGrid = $('stats-grid');\n    if (!statsGrid) return;\n\n    Promise.all([\n      this.countItems('projects'),\n      this.countItems('categories'),\n      this.countItems('comments'),\n      this.getTotalViews()\n    ]).then(([projects, categories, comments, views]) => {\n      statsGrid.innerHTML = `\n        <div class=\"stat-card\">\n          <div class=\"stat-value\">${projects}</div>\n          <div class=\"stat-label\">📄 Total Projects</div>\n        </div>\n        <div class=\"stat-card\">\n          <div class=\"stat-value\">${categories}</div>\n          <div class=\"stat-label\">📁 Categories</div>\n        </div>\n        <div class=\"stat-card\">\n          <div class=\"stat-value\">${views}</div>\n          <div class=\"stat-label\">👁️ Total Views</div>\n        </div>\n        <div class=\"stat-card\">\n          <div class=\"stat-value\">${comments}</div>\n          <div class=\"stat-label\">💬 Comments</div>\n        </div>\n      `;\n    });\n  }\n\n  countItems(path) {\n    return new Promise((resolve) => {\n      const itemRef = ref(db, path);\n      get(itemRef).then(snap => {\n        const data = snap.val() || {};\n        resolve(Object.keys(data).length);\n      }).catch(() => resolve(0));\n    });\n  }\n\n  getTotalViews() {\n    return new Promise((resolve) => {\n      const projectsRef = ref(db, 'projects');\n      get(projectsRef).then(snap => {\n        const data = snap.val() || {};\n        const total = Object.values(data).reduce((sum, p) => sum + (p.views || 0), 0);\n        resolve(total);\n      }).catch(() => resolve(0));\n    });\n  }\n\n  showSection(section) {\n    document.querySelectorAll('.admin-section').forEach(el => {\n      el.classList.add('hidden');\n    });\n\n    const sectionEl = document.getElementById(section + '-section');\n    if (sectionEl) {\n      sectionEl.classList.remove('hidden');\n    }\n\n    if (section === 'projects') this.loadProjects();\n    if (section === 'categories') this.loadCategories();\n    if (section === 'comments') this.loadComments();\n    if (section === 'settings') this.loadSettings();\n  }\n\n  // ============ PROJECTS ============\n  toggleProjectForm() {\n    const form = $('project-form');\n    form.classList.toggle('hidden');\n    if (!form.classList.contains('hidden')) {\n      this.renderProjectForm();\n    }\n  }\n\n  renderProjectForm() {\n    const form = $('project-form');\n    form.innerHTML = `\n      <div class=\"form-group\">\n        <label>📝 Project Title *</label>\n        <input type=\"text\" id=\"p-title\" maxlength=\"100\" placeholder=\"Enter project title\">\n      </div>\n      <div class=\"form-group\">\n        <label>📋 Short Description</label>\n        <textarea id=\"p-short-desc\" maxlength=\"200\" placeholder=\"Brief description\"></textarea>\n      </div>\n      <div class=\"form-group\">\n        <label>📄 Full Description</label>\n        <textarea id=\"p-full-desc\" maxlength=\"2000\" placeholder=\"Detailed description\"></textarea>\n      </div>\n      <div class=\"form-group\">\n        <label>📁 Category *</label>\n        <select id=\"p-category\">\n          <option value=\"\">Select Category</option>\n        </select>\n      </div>\n      <div class=\"form-group\">\n        <label>🖼️ Thumbnail URL</label>\n        <input type=\"url\" id=\"p-thumbnail\" placeholder=\"Image URL\">\n      </div>\n      <div class=\"form-group\">\n        <label>👤 Author</label>\n        <input type=\"text\" id=\"p-author\" maxlength=\"50\" placeholder=\"Author name\">\n      </div>\n      <div class=\"form-group\">\n        <label>📦 Version</label>\n        <input type=\"text\" id=\"p-version\" maxlength=\"20\" value=\"1.0\" placeholder=\"1.0\">\n      </div>\n      <div class=\"form-group\">\n        <label>🏷️ Tags (comma separated)</label>\n        <input type=\"text\" id=\"p-tags\" maxlength=\"200\" placeholder=\"tag1, tag2, tag3\">\n      </div>\n      <div class=\"form-group\">\n        <label><input type=\"checkbox\" id=\"p-featured\"> ⭐ Featured Project</label>\n      </div>\n      <button class=\"btn btn-success\" onclick=\"adminApp.saveProject()\">✅ Save Project</button>\n    `;\n\n    const catSelect = document.getElementById('p-category');\n    const categoriesRef = ref(db, 'categories');\n    onValue(categoriesRef, snap => {\n      const data = snap.val() || {};\n      Object.keys(data).forEach(key => {\n        const opt = document.createElement('option');\n        opt.value = key;\n        opt.text = data[key].name;\n        catSelect.appendChild(opt);\n      });\n    }, { onlyOnce: true });\n  }\n\n  saveProject() {\n    const title = document.getElementById('p-title').value.trim();\n    const categoryId = document.getElementById('p-category').value;\n\n    if (!title || !categoryId) {\n      alert('❌ Title and Category are required');\n      return;\n    }\n\n    const shortDesc = document.getElementById('p-short-desc').value.trim();\n    const fullDesc = document.getElementById('p-full-desc').value.trim();\n    const thumbnail = document.getElementById('p-thumbnail').value.trim();\n    const author = document.getElementById('p-author').value.trim();\n    const version = document.getElementById('p-version').value.trim();\n    const tags = document.getElementById('p-tags').value.trim();\n    const featured = document.getElementById('p-featured').checked;\n\n    const projectsRef = ref(db, 'projects');\n    push(projectsRef, {\n      title,\n      shortDescription: shortDesc,\n      fullDescription: fullDesc,\n      categoryId,\n      thumbnail: thumbnail || '/assets/placeholder.png',\n      author,\n      version,\n      tags,\n      featured,\n      createdAt: Date.now(),\n      views: 0,\n      likes: 0,\n      loves: 0,\n      downloads: {}\n    }).then(() => {\n      alert('✅ Project created successfully!');\n      $('project-form').classList.add('hidden');\n      this.loadProjects();\n    }).catch(err => {\n      alert('❌ Error: ' + err.message);\n    });\n  }\n\n  loadProjects() {\n    const list = $('projects-list');\n    if (!list) return;\n\n    list.innerHTML = '<p class=\"loading\">⏳ Loading projects...</p>';\n\n    const projectsRef = ref(db, 'projects');\n    onValue(projectsRef, snap => {\n      list.innerHTML = '';\n      const data = snap.val() || {};\n      const projects = Object.keys(data).map(k => ({ id: k, ...data[k] }));\n\n      if (projects.length === 0) {\n        list.innerHTML = '<p class=\"no-data\">📭 No projects yet</p>';\n        return;\n      }\n\n      projects.forEach(p => {\n        const card = el('div', 'project-item');\n        card.innerHTML = `\n          <div class=\"item-header\">\n            <h4>${p.title}</h4>\n            <div class=\"item-actions\">\n              <button class=\"btn btn-sm btn-danger\" onclick=\"adminApp.deleteProject('${p.id}')\">🗑️ Delete</button>\n            </div>\n          </div>\n          <p>${p.shortDescription || 'No description'}</p>\n          <small>👁️ Views: ${p.views || 0} | 👍 Likes: ${p.likes || 0} | ❤️ Loves: ${p.loves || 0}</small>\n        `;\n        list.appendChild(card);\n      });\n    });\n  }\n\n  deleteProject(id) {\n    if (!confirm('⚠️ Are you sure you want to delete this project?')) return;\n\n    const projectRef = ref(db, `projects/${id}`);\n    remove(projectRef).then(() => {\n      alert('✅ Project deleted!');\n      this.loadProjects();\n    }).catch(err => {\n      alert('❌ Error: ' + err.message);\n    });\n  }\n\n  // ============ CATEGORIES ============\n  toggleCategoryForm() {\n    const form = $('category-form');\n    form.classList.toggle('hidden');\n    if (!form.classList.contains('hidden')) {\n      form.innerHTML = `\n        <div class=\"form-group\">\n          <label>📁 Category Name *</label>\n          <input type=\"text\" id=\"c-name\" maxlength=\"50\" placeholder=\"Category name\">\n        </div>\n        <div class=\"form-group\">\n          <label>🎯 Icon/Emoji</label>\n          <input type=\"text\" id=\"c-icon\" maxlength=\"10\" placeholder=\"📁\">\n        </div>\n        <div class=\"form-group\">\n          <label>📝 Description</label>\n          <textarea id=\"c-desc\" maxlength=\"200\" placeholder=\"Category description\"></textarea>\n        </div>\n        <button class=\"btn btn-success\" onclick=\"adminApp.saveCategory()\">✅ Save Category</button>\n      `;\n    }\n  }\n\n  saveCategory() {\n    const name = document.getElementById('c-name').value.trim();\n\n    if (!name) {\n      alert('❌ Category name is required');\n      return;\n    }\n\n    const icon = document.getElementById('c-icon').value.trim();\n    const desc = document.getElementById('c-desc').value.trim();\n\n    const categoriesRef = ref(db, 'categories');\n    push(categoriesRef, {\n      name,\n      icon: icon || '📁',\n      description: desc,\n      createdAt: Date.now()\n    }).then(() => {\n      alert('✅ Category created!');\n      $('category-form').classList.add('hidden');\n      this.loadCategories();\n    }).catch(err => {\n      alert('❌ Error: ' + err.message);\n    });\n  }\n\n  loadCategories() {\n    const list = $('categories-list');\n    if (!list) return;\n\n    list.innerHTML = '<p class=\"loading\">⏳ Loading categories...</p>';\n\n    const categoriesRef = ref(db, 'categories');\n    onValue(categoriesRef, snap => {\n      list.innerHTML = '';\n      const data = snap.val() || {};\n      const categories = Object.keys(data).map(k => ({ id: k, ...data[k] }));\n\n      if (categories.length === 0) {\n        list.innerHTML = '<p class=\"no-data\">📭 No categories</p>';\n        return;\n      }\n\n      categories.forEach(c => {\n        const card = el('div', 'category-item');\n        card.innerHTML = `\n          <div class=\"item-header\">\n            <span>${c.icon || '📁'} ${c.name}</span>\n            <button class=\"btn btn-sm btn-danger\" onclick=\"adminApp.deleteCategory('${c.id}')\">🗑️ Delete</button>\n          </div>\n          <p>${c.description || 'No description'}</p>\n        `;\n        list.appendChild(card);\n      });\n    });\n  }\n\n  deleteCategory(id) {\n    if (!confirm('⚠️ Are you sure you want to delete this category?')) return;\n\n    const catRef = ref(db, `categories/${id}`);\n    remove(catRef).then(() => {\n      alert('✅ Category deleted!');\n      this.loadCategories();\n    }).catch(err => {\n      alert('❌ Error: ' + err.message);\n    });\n  }\n\n  // ============ COMMENTS ============\n  loadComments() {\n    const list = $('comments-list');\n    if (!list) return;\n\n    list.innerHTML = '<p class=\"loading\">⏳ Loading comments...</p>';\n\n    const commentsRef = ref(db, 'comments');\n    onValue(commentsRef, snap => {\n      list.innerHTML = '';\n      const data = snap.val() || {};\n\n      let totalComments = 0;\n      Object.keys(data).forEach(projectId => {\n        const comments = data[projectId];\n        Object.keys(comments).forEach(key => {\n          const c = comments[key];\n          totalComments++;\n\n          const card = el('div', 'comment-item');\n          card.innerHTML = `\n            <div class=\"item-header\">\n              <strong>👤 ${c.name}</strong>\n              <span class=\"badge ${c.approved ? 'badge-success' : 'badge-warning'}\">${\n                c.approved ? '✅ Approved' : '⏳ Pending'\n              }</span>\n            </div>\n            <p>\"${c.comment}\"</p>\n            <div class=\"item-actions\">\n              ${!c.approved ? `<button class=\"btn btn-sm btn-success\" onclick=\"adminApp.approveComment('${projectId}', '${key}')\">✅ Approve</button>` : ''}\n              <button class=\"btn btn-sm btn-danger\" onclick=\"adminApp.deleteComment('${projectId}', '${key}')\">🗑️ Delete</button>\n            </div>\n          `;\n          list.appendChild(card);\n        });\n      });\n\n      if (totalComments === 0) {\n        list.innerHTML = '<p class=\"no-data\">📭 No comments</p>';\n      }\n    });\n  }\n\n  approveComment(projectId, commentId) {\n    const ref_path = ref(db, `comments/${projectId}/${commentId}/approved`);\n    set(ref_path, true).then(() => {\n      alert('✅ Comment approved!');\n      this.loadComments();\n    });\n  }\n\n  deleteComment(projectId, commentId) {\n    if (!confirm('⚠️ Delete this comment?')) return;\n\n    const ref_path = ref(db, `comments/${projectId}/${commentId}`);\n    remove(ref_path).then(() => {\n      alert('✅ Comment deleted!');\n      this.loadComments();\n    });\n  }\n\n  // ============ SETTINGS ============\n  loadSettings() {\n    const form = $('settings-form');\n    if (!form) return;\n\n    form.innerHTML = `\n      <div class=\"form-group\">\n        <label>🌐 Website Name</label>\n        <input type=\"text\" id=\"s-name\" maxlength=\"50\" placeholder=\"Code Share\">\n      </div>\n      <div class=\"form-group\">\n        <label>📝 Website Description</label>\n        <textarea id=\"s-desc\" maxlength=\"500\" placeholder=\"Website description\"></textarea>\n      </div>\n      <div class=\"form-group\">\n        <label>📄 Footer Description</label>\n        <textarea id=\"s-footer\" maxlength=\"500\" placeholder=\"Footer description\"></textarea>\n      </div>\n      <div class=\"form-group\">\n        <label>©️ Copyright Text</label>\n        <input type=\"text\" id=\"s-copyright\" maxlength=\"100\" placeholder=\"Copyright 2024\">\n      </div>\n      <button class=\"btn btn-success\" onclick=\"adminApp.saveSettings()\">✅ Save Settings</button>\n    `;\n\n    const settingsRef = ref(db, 'settings');\n    get(settingsRef).then(snap => {\n      const data = snap.val() || {};\n      if (document.getElementById('s-name')) {\n        document.getElementById('s-name').value = data.name || '';\n        document.getElementById('s-desc').value = data.description || '';\n        document.getElementById('s-footer').value = data.footerDescription || '';\n        document.getElementById('s-copyright').value = data.copyright || '';\n      }\n    });\n  }\n\n  saveSettings() {\n    const settings = {\n      name: document.getElementById('s-name').value.trim(),\n      description: document.getElementById('s-desc').value.trim(),\n      footerDescription: document.getElementById('s-footer').value.trim(),\n      copyright: document.getElementById('s-copyright').value.trim(),\n      updatedAt: Date.now()\n    };\n\n    const settingsRef = ref(db, 'settings');\n    set(settingsRef, settings).then(() => {\n      alert('✅ Settings saved!');\n    }).catch(err => {\n      alert('❌ Error: ' + err.message);\n    });\n  }\n}\n\nwindow.adminApp = new AdminApp();
