@@ -38,7 +38,7 @@
   <script type="module">
     import firebaseConfig from '/src/firebase/config.js';
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
-    import { getDatabase, ref, get, child, onValue, update, push } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
+    import { getDatabase, ref, get, child, onValue, update, push, set } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -69,23 +69,19 @@
       pInfo.innerHTML = `<h3>Features</h3><p>${p.features || p.fullDescription || ''}</p><h4>Requirements</h4><p>${p.requirements || ''}</p><h4>ChangeLog</h4><p>${p.changelog || ''}</p>`;
       pStats.innerHTML = `Likes: ${p.likes||0} • Loves: ${p.loves||0} • Views: ${p.views||0} • Downloads: ${p.downloadsCount||0}`;
 
-      // downloads
       pDownloads.innerHTML = '<h3>Downloads</h3>';
       const downloads = p.downloads || {};
       Object.keys(downloads).forEach(k=>{
         const d = downloads[k];
         const btn = document.createElement('button'); btn.className='btn primary'; btn.textContent = d.name || 'Download';
         btn.onclick = async ()=>{
-          // track click
           await trackDownload(id, k);
-          // smart link open
           if(d.smartLink) window.open(d.smartLink,'_blank');
           setTimeout(()=>{ if(d.finalLink) window.open(d.finalLink,'_blank'); }, 800);
         };
         pDownloads.appendChild(btn);
       });
 
-      // load comments (approved only)
       onValue(ref(db, `comments/${id}`),(snap)=>{
         const data = snap.val() || {};
         commentsList.innerHTML = '';
@@ -95,7 +91,6 @@
         });
       });
 
-      // increment view (unique per device)
       incrementView(id);
     }
 
@@ -113,14 +108,12 @@
 
     async function trackDownload(pid, dkey){
       try{
-        // increment downloadsCount and per-button counter
         const snap = await get(ref(db, `projects/${pid}/downloadsCount`));
         const total = (snap.val()||0) + 1;
         await update(ref(db, `projects/${pid}`), { downloadsCount: total });
         const bsnap = await get(ref(db, `projects/${pid}/downloads/${dkey}/count`));
         const bc = (bsnap.val()||0) + 1;
         await update(ref(db, `projects/${pid}/downloads/${dkey}`), { count: bc });
-        // log entry
         const logRef = push(ref(db, `downloadLogs/${pid}`));
         await set(logRef, { buttonKey: dkey, time: Date.now() });
       }catch(e){ console.error(e); }
