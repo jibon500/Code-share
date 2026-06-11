@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Code Share — Professional Code Sharing Platform (WIP)</title>
+  <style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:20px;background:#f7f7f7;color:#222}a{color:#0066cc}</style>
+</head>
+<body>
+  <h1>Code Share (WIP)</h1>
+  <p>এই রেপোজিটরিতে আমি ধাপে ধাপে "Professional Code Sharing & Download Platform" তৈরি করছি।</p>
+  <ul>
+    <li><a href="/" target="_blank">Site root</a></li>
+    <li><a href="/admin50" target="_blank">Admin Panel (placeholder)</a></li>
+  </ul>
+  <h2>Firebase</h2>
+  <p>Firebase configuration is stored in <code>src/firebase/config.js</code>.</p>
+
+  <script type="module">
+    import firebaseConfig from './src/firebase/config.js';
+    // Lazy-load Firebase SDKs (modular) if needed later
+    // For now just expose config for debugging in development only
+    window._FIREBASE_CONFIG = firebaseConfig;
+    console.log('Firebase config loaded (not initialized):', firebaseConfig);
+  </script>
+</body>
+</html>
