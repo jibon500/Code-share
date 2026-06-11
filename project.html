@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Code Share — Project Details</title>
+  <meta name="description" content="Project details page" id="meta-desc">
+  <link rel="stylesheet" href="/src/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/assets/favicon.png">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <a href="/">Home</a>
+    </div>
+  </header>
+  <main class="container" id="project-page">
+    <div id="project-root" class="card">
+      <h1 id="p-title">Loading...</h1>
+      <div id="p-meta"></div>
+      <img id="p-image" src="/assets/project-placeholder.jpg" style="width:100%;max-height:420px;object-fit:cover;border-radius:8px;margin-top:8px"/>
+      <div id="p-info" style="margin-top:12px"></div>
+      <div id="p-stats" style="margin-top:8px;color:var(--muted)"></div>
+
+      <div id="p-downloads" style="margin-top:12px"></div>
+
+      <h3 style="margin-top:18px">Comments</h3>
+      <div id="comments-list"></div>
+      <div style="margin-top:8px">
+        <input id="comment-name" placeholder="Your name" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:48%">
+        <input id="comment-text" placeholder="Your comment" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:48%">
+        <button id="comment-send" class="btn">Post</button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import firebaseConfig from '/src/firebase/config.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
+    import { getDatabase, ref, get, child, onValue, update, push } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const pTitle = document.getElementById('p-title');
+    const pMeta = document.getElementById('p-meta');
+    const pImage = document.getElementById('p-image');
+    const pInfo = document.getElementById('p-info');
+    const pStats = document.getElementById('p-stats');
+    const pDownloads = document.getElementById('p-downloads');
+    const commentsList = document.getElementById('comments-list');
+    const commentName = document.getElementById('comment-name');
+    const commentText = document.getElementById('comment-text');
+    const commentSend = document.getElementById('comment-send');
+
+    if(!id){ pTitle.textContent='No project specified'; }
+
+    async function load(){
+      const snap = await get(child(ref(db), `projects/${id}`));
+      const p = snap.val();
+      if(!p){ pTitle.textContent='Project not found'; return; }
+      pTitle.textContent = p.title;
+      document.getElementById('meta-desc').setAttribute('content', p.shortDescription || '');
+      pMeta.innerHTML = `<small>Author: ${p.author||'Unknown'} • Version: ${p.version||'1.0'}</small>`;
+      pImage.src = p.previewImages?.[0] || p.thumbnail || '/assets/project-placeholder.jpg';
+      pInfo.innerHTML = `<h3>Features</h3><p>${p.features || p.fullDescription || ''}</p><h4>Requirements</h4><p>${p.requirements || ''}</p><h4>ChangeLog</h4><p>${p.changelog || ''}</p>`;
+      pStats.innerHTML = `Likes: ${p.likes||0} • Loves: ${p.loves||0} • Views: ${p.views||0} • Downloads: ${p.downloadsCount||0}`;
+
+      // downloads
+      pDownloads.innerHTML = '<h3>Downloads</h3>';
+      const downloads = p.downloads || {};
+      Object.keys(downloads).forEach(k=>{
+        const d = downloads[k];
+        const btn = document.createElement('button'); btn.className='btn primary'; btn.textContent = d.name || 'Download';
+        btn.onclick = async ()=>{
+          // track click
+          await trackDownload(id, k);
+          // smart link open
+          if(d.smartLink) window.open(d.smartLink,'_blank');
+          setTimeout(()=>{ if(d.finalLink) window.open(d.finalLink,'_blank'); }, 800);
+        };
+        pDownloads.appendChild(btn);
+      });
+
+      // load comments (approved only)
+      onValue(ref(db, `comments/${id}`),(snap)=>{
+        const data = snap.val() || {};
+        commentsList.innerHTML = '';
+        Object.keys(data).forEach(key=>{
+          const c = data[key];
+          if(c.approved){ const div = document.createElement('div'); div.className='card'; div.style.marginBottom='6px'; div.innerHTML = `<b>${c.name}</b><div>${c.comment}</div><small>${new Date(c.createdAt).toLocaleString()}</small>`; commentsList.appendChild(div);} 
+        });
+      });
+
+      // increment view (unique per device)
+      incrementView(id);
+    }
+
+    async function incrementView(pid){
+      try{
+        const key = `cs_viewed_${pid}`;
+        if(localStorage.getItem(key)) return;
+        localStorage.setItem(key,'1');
+        const refPath = ref(db, `projects/${pid}/views`);
+        const snap = await get(refPath);
+        const v = snap.val()||0;
+        await update(ref(db, `projects/${pid}`), { views: v+1 });
+      }catch(e){ console.error(e); }
+    }
+
+    async function trackDownload(pid, dkey){
+      try{
+        // increment downloadsCount and per-button counter
+        const snap = await get(ref(db, `projects/${pid}/downloadsCount`));
+        const total = (snap.val()||0) + 1;
+        await update(ref(db, `projects/${pid}`), { downloadsCount: total });
+        const bsnap = await get(ref(db, `projects/${pid}/downloads/${dkey}/count`));
+        const bc = (bsnap.val()||0) + 1;
+        await update(ref(db, `projects/${pid}/downloads/${dkey}`), { count: bc });
+        // log entry
+        const logRef = push(ref(db, `downloadLogs/${pid}`));
+        await set(logRef, { buttonKey: dkey, time: Date.now() });
+      }catch(e){ console.error(e); }
+    }
+
+    commentSend.onclick = async ()=>{
+      const name = commentName.value.trim(); const comment = commentText.value.trim();
+      if(!name || !comment) return alert('Provide name and comment');
+      await push(ref(db, `comments/${id}`), { name, comment, createdAt: Date.now(), approved: false });
+      commentName.value=''; commentText.value=''; alert('Comment submitted for review');
+    };
+
+    load();
+  </script>
+</body>
+</html>
